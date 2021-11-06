@@ -1,0 +1,94 @@
+@mixin lg {
+    @media (max-width: 1200px) {
+        @content;
+    }
+}
+
+@mixin md {
+    @media (max-width: 992px) {
+        @content;
+    }
+}
+
+@mixin sm {
+    @media (max-width: 768px) {
+        @content;
+    }
+}
+
+@mixin xs {
+    @media (max-width: 576px) {
+        @content;
+    }
+}
+
+@mixin xxs {
+    @media (max-width: 400px) {
+        @content;
+    }
+}
+
+@mixin em {
+    @media (max-width: 320px) {
+        @content;
+    }
+}
+
+@mixin center {
+    margin: { 
+        left: auto;
+        right: auto;
+    }
+    text-align: center;
+}
+
+@mixin addFont ($name, $path){
+    @font-face {
+        font-family: $name;
+        src: url(../fonts/#{$path});
+    }
+}
+
+@mixin fixedBack ($path){
+    background: url($path) fixed no-repeat;
+    background-size: cover;
+}
+
+@mixin overlay ($color, $opacity) {
+    width: 100%;
+    height: 100%;
+    background: rgba($color, $opacity);
+}
+
+@mixin clearfix {
+    &:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+}
+
+@mixin prefixer($property, $value, $vendors: webkit moz ms o, $default: true) {
+    @if $default {
+        #{$property}: #{$value};
+    }
+    @if $vendors {
+        @each $vendor in $vendors {
+            #{"-" + $vendor + "-" + $property}: #{$value};
+        }
+    }
+}
+
+@mixin keyframes($name) {
+    @-webkit-keyframes #{$name} {
+        @content;
+    }
+
+    @-moz-keyframes #{$name} {
+        @content;
+    }
+
+    @keyframes #{$name} {
+        @content;
+    }
+}

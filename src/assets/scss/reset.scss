@@ -1,0 +1,307 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+/*  { General Rules & Styles For Elements }   */
+$mainColor: #341f97;
+$h1: 48px;
+$h2: 38px;
+$h3: 30px;
+$h4: 24px;
+$h5: 18px;
+$h6: 15px;
+$p: 15px;
+
+
+/*  { General Rules & Styles For Elements }   */
+* {
+  -webkit-transition: all 0.4s ease-in-out;
+  transition: all 0.4s ease-in-out;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: #E5ECF4;
+  overflow-x: hidden;
+}
+
+body {
+  padding-right: 0!important;
+  background-color: #E5ECF4!important;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 10px 0;
+}
+
+h1 {
+  font-size: 48px;
+}
+
+h2 {
+  font-size: 38px;
+}
+
+h3 {
+  font-size: 30px;
+}
+
+h4 {
+  font-size: 24px;
+}
+
+h5 {
+  font-size: 18px;
+}
+
+h6 {
+  font-size: 15px;
+}
+
+p {
+  color: #676767;
+  line-height: 25px;
+  font-size: 15px;
+}
+
+span {
+  display: inline-block;
+}
+
+button {
+  background: #002147;
+  padding: 10px 30px;
+  color: #fff;
+  border: 1px solid #999;
+  outline: none;
+  border-radius: 25px;
+  font-size: 15px;
+  cursor: pointer;
+  -webkit-box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+button:focus {
+  outline: none;
+}
+
+button:hover {
+  -webkit-transform: scale(0.95);
+  transform: scale(0.95);
+}
+
+input,
+textarea {
+  background: #f8f8f8;
+  border-radius: 15px;
+  border: 2px solid #f2f2f2;
+  padding: 12px 20px;
+  outline: none;
+  font-size: 15px;
+  resize: none;
+}
+
+input:focus,
+textarea:focus {
+  // border-color: #002147;
+}
+
+table {
+  max-width: 100%;
+}
+
+table tr th,
+table tr td {
+  font-size: 17px;
+  border: 1px solid #ccc;
+  padding: 7px 25px;
+}
+
+img {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.thumb-sm {
+  width: 50px;
+  height: 50px;
+}
+
+.thumb-md {
+  width: 90px;
+  height: 90px;
+}
+
+.thumb-lg {
+  width: 140px;
+  height: 140px;
+}
+
+.circle {
+  border-radius: 50%;
+}
+
+.social-icons i {
+  display: inline-block;
+  font-size: 18px;
+  color: #fff;
+  padding: 10px;
+  border-radius: 50%;
+  background: #002147;
+  margin: 0 4px;
+  cursor: pointer;
+}
+
+.social-icons i:hover {
+  -webkit-transform: translateY(3px);
+  transform: translateY(3px);
+}
+
+.social-icons i:first-child {
+  background: #2aa3f0;
+  /* Twitter */
+}
+
+.social-icons i:nth-child(2) {
+  background: #3b5998;
+  /* Facebook */
+}
+
+.social-icons i:nth-child(3) {
+  background: #fc0d1c;
+  /* YouTube */
+}
+
+.social-icons i:nth-child(4) {
+  background: #fb416b;
+  /* Instagram */
+}
+
+.social-icons i:nth-child(5) {
+  background: #bd081c;
+  /* Pinterest */
+}
+
+/***** Adjusting Font Sizes For All Screens *****/
+@media (max-width: 992px) {
+  h1 {
+    font-size: 40.8px;
+  }
+
+  h2 {
+    font-size: 32.3px;
+  }
+
+  h3 {
+    font-size: 25.5px;
+  }
+
+  h4 {
+    font-size: 20.4px;
+  }
+
+  h5 {
+    font-size: 15.3px;
+  }
+
+  h6 {
+    font-size: 12.75px;
+  }
+}
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 36px;
+  }
+
+  h2 {
+    font-size: 28.5px;
+  }
+
+  h3 {
+    font-size: 22.5px;
+  }
+
+  h4 {
+    font-size: 18px;
+  }
+
+  h5 {
+    font-size: 13.5px;
+  }
+
+  h6 {
+    font-size: 11.25px;
+  }
+
+  p {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 576px) {
+  button {
+    padding: 8px 20px;
+  }
+
+  input,
+  textarea {
+    padding: 10px 16px;
+    width: 100%;
+  }
+
+  button,
+  input,
+  textarea {
+    font-size: 13px;
+  }
+}
+
+*:not(i) {
+  font-family: 'Poppins', sans-serif;
+  color: #fff;
+}
+
+::-moz-selection {
+  background: #E5ECF4;
+  color: #07070A;
+}
+
+::selection {
+  background: #E5ECF4;
+  color: #07070A;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 10px;
+  border-radius: 5px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #fff;
+}
+ 
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #a8cfdf; 
+  border-radius: 10px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #6a91a1; 
+}
+
+.swal2-icon .swal2-icon-content {
+  color: #87adbd;
+}
