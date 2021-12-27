@@ -1,18 +1,25 @@
 import { useEffect, useState, useRef } from 'react';
 import Swal from "sweetalert2";
 import axios from "../../axios/axios";
+import { useCookies } from 'react-cookie';
 import { showLoader, hideLoader } from "../loader.jsx";
+import { createAuthHeaders } from "../../utils/headers";
 
 const Skills = () => {
     const [skills, setSkills] = useState([]);
     const [addEditMode, setAddEditMode] = useState(false);
+    const [dragAllowed, setDragAllowed] = useState(false);
     const [editMode, setEditMode] = useState(false);
+    const [{portfolioCurrentAdmin: token}] = useCookies(['portfolioCurrentAdmin']);
     const nameInput = useRef();
     const logoInput = useRef();
 
     const getSkills = async () => {
-        const { data } = await axios.get('/api/skills');
-        setSkills(data)
+        const { data: {err, success} } = await axios.get('/api/skills');
+
+        if (err) return;
+
+        setSkills(success)
     }
 
     useEffect(() => {
@@ -42,17 +49,13 @@ const Skills = () => {
             confirmButtonText: 'Delete',
         }).then(async (result) => {
             if (result.isConfirmed) {
-                const { data } = await axios.delete(`/api/skills?id=${ID}`);
-                if (data === "Deleted") {
-                    getSkills();
-                    Swal.fire('Deleted!', '', 'success')
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data
-                    });
-                }
+                const { data: {err} } = await axios.delete(`/api/skills?id=${ID}`, createAuthHeaders(token));
+
+                if (err) return Swal.fire({ icon: 'error', title: err });
+
+                getSkills();
+
+                Swal.fire('Deleted!', '', 'success')
             }
         });
     }
@@ -68,11 +71,7 @@ const Skills = () => {
 
         if (Skill.name === "") {
             hideLoader();
-            return Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: "Empty Fileds"
-            });
+            return Swal.fire({ icon: 'error', title: 'You have missed out some empty fields' });
         }
         
         const formdata = new FormData();
@@ -80,56 +79,134 @@ const Skills = () => {
 
         if (logo) formdata.append('logo', logo);
 
-        const {data} = await axios.patch(`/api/skills?id=${ID}`, formdata)
-        if (data._id) {
-            getSkills();
-            Swal.fire('Skill Edited Successfully!', '', 'success');
-            setAddEditMode(false);
-            setEditMode(false);
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data
-            });
+        const {data: {err}} = await axios.patch(`/api/skills?id=${ID}`, formdata, createAuthHeaders(token));
+        
+        if (err) {
+            hideLoader();
+            return Swal.fire({ icon: 'error', title: err });
         }
+
+        getSkills();
+
+        Swal.fire('Skill edited successfully!', '', 'success');
+
+        setAddEditMode(false);
+
+        setEditMode(false);
+
         hideLoader();
     }
 
     const add = async () => {
         showLoader();
-        const Skill = {
-            name: nameInput.current.value,
-        };
+        
+        const Skill = { name: nameInput.current.value };
 
         var logo = logoInput.current.files[0];
 
         if (Skill.name === "" || !logo) {
             hideLoader();
-            return Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: "Empty Fileds"
-            });
+            return Swal.fire({ icon: 'error', title: 'You have missed out some empty fields' });
         }
         
         const formdata = new FormData();
         formdata.set('name', Skill.name);
         formdata.append('logo', logo);
 
-        const {data} = await axios.post(`/api/skills`, formdata)
-        if (data._id) {
-            getSkills();
-            Swal.fire('Skill Added Successfully!', '', 'success');
-            setAddEditMode(false);
-            setEditMode(false);
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data
-            });
+        const { data: {err} } = await axios.post(`/api/skills`, formdata, createAuthHeaders(token));
+
+        if (err) {
+            hideLoader();
+            return Swal.fire({ icon: 'error', title: err });
         }
+
+        getSkills();
+
+        Swal.fire('New skill added successfully!', '', 'success');
+
+        setAddEditMode(false);
+
+        setEditMode(false);
+
+        hideLoader();
+    }
+
+    const handleDragStart = (e) => {
+        if (!dragAllowed) return;
+        e.dataTransfer.setData("skill-id", e.target.id);
+    }
+
+    const handleDrop = (e) => {
+        if (!dragAllowed) return;
+        const AllSkills = [...skills];
+        
+        const draggedSkillId = e.dataTransfer.getData("skill-id");
+        const droppedOverSkillId = e.target.closest("tr").id;
+
+        if (draggedSkillId === droppedOverSkillId) return;
+
+        const draggedSkillIndex = AllSkills.findIndex(skill => skill._id === draggedSkillId)
+        const droppedOverSkillIndex = AllSkills.findIndex(skill => skill._id === droppedOverSkillId)
+        
+        const draggedSkill = AllSkills.find(skill => skill._id === draggedSkillId)
+        const droppedOverSkill = AllSkills.find(skill => skill._id === droppedOverSkillId)
+        
+        /*****************************************************************************************************/
+        /******************************************| Drag n Drop Logic |**************************************/
+        /*****************************************************************************************************/
+        // There are skills Between them
+        if (draggedSkillIndex !== droppedOverSkillIndex + 1 && droppedOverSkillIndex !== draggedSkillIndex + 1) {
+            if (draggedSkillIndex < droppedOverSkillIndex) {
+                AllSkills.splice(droppedOverSkillIndex, 1, droppedOverSkill, draggedSkill);
+                AllSkills.splice(draggedSkillIndex, 1);
+            } else {
+                AllSkills.splice(droppedOverSkillIndex, 1, draggedSkill, droppedOverSkill);
+                AllSkills.splice(draggedSkillIndex + 1, 1);
+            }
+        } 
+        // There are No skills Between them
+        else {
+            if (draggedSkillIndex < droppedOverSkillIndex) {
+                AllSkills.splice(droppedOverSkillIndex, 1, droppedOverSkill, draggedSkill);
+                AllSkills.splice(draggedSkillIndex, 1);
+            } else {
+                AllSkills.splice(droppedOverSkillIndex, 1, draggedSkill, droppedOverSkill);
+                AllSkills.splice(draggedSkillIndex + 1, 1);
+            }
+        }
+
+        // Handle The Change Of Priority
+        const updatedSkills = AllSkills.map((skill, idx) => {
+            skill.priority = idx + 1;
+            return skill;
+        });
+
+        // Change Order In UI
+        setSkills(updatedSkills);
+    }
+
+    const cancelOrder = () => {
+        getSkills();
+        setDragAllowed(false);
+    }
+
+    const saveOrder = async () => {
+        showLoader();
+
+        // Save The New Order To DB
+        const dataToUpdate = skills.map(({_id, priority}) => ({_id, priority}));
+        
+        const { data: {err} } = await axios.patch(`/api/skills/updateOrder`, dataToUpdate, createAuthHeaders(token))
+        
+        if (err) {
+            hideLoader();
+            return Swal.fire({ icon: 'error', title: err });
+        }
+
+        Swal.fire('New order saved', '', 'success');
+        
+        setDragAllowed(false);
+
         hideLoader();
     }
 
@@ -141,7 +218,16 @@ const Skills = () => {
         {
             !addEditMode && (
                 <div className="nav">
-                    <button onClick={() => setAddEditMode(true)}><i className="fal fa-plus-square me-1" /> Add New Skill</button>
+                    <button className="me-2" onClick={() => setAddEditMode(true)}><i className="fal fa-plus-square me-1" /> Add New Skill</button>
+                    {
+                        dragAllowed ? 
+                        <>
+                            <button className="saveOrder" onClick={saveOrder}><i className="fad fa-save me-1" /> Save Order</button>
+                            <button className="cancelOrder" onClick={cancelOrder}><i className="fad fa-ban me-1" /> Cancel</button>
+                        </>
+                        :
+                        <button onClick={() => setDragAllowed(true)}><i className="fad fa-sort-size-up me-1" /> Change Order</button>
+                    }
                 </div>
             )
         }
@@ -160,7 +246,15 @@ const Skills = () => {
                             </tr>
                             {
                                 skills.length ? skills.map((skill, i) => (
-                                    <tr key={skill._id}>
+                                    <tr 
+                                        key={skill._id} 
+                                        draggable={dragAllowed} 
+                                        onDragStart={handleDragStart} 
+                                        onDrop={handleDrop} 
+                                        onDragOver={(e) => e.preventDefault()}
+                                        id={skill._id}
+                                        className={dragAllowed ? "draggable" : ""}
+                                    >
                                         <td>{i + 1}</td>
                                         <td>
                                         <img src={skill.logo} alt="logo" />

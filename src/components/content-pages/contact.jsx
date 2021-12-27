@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
 import Swal from "sweetalert2";
 import axios from "../../axios/axios";
+import { useCookies } from 'react-cookie';
 import moment from "moment";
+import { createAuthHeaders } from "../../utils/headers";
 
 const Contact = () => {
     const [msgs, setMsgs] = useState([]);
+    const [{portfolioCurrentAdmin: token}] = useCookies(['portfolioCurrentAdmin']);
 
     const getMessages = async () => {
-        const { data } = await axios.get('/api/contact');
-        setMsgs(data)
+        const { data: {err, success} } = await axios.get('/api/contact', createAuthHeaders(token));
+
+        if (err) return;
+    
+        setMsgs(success)
     }
 
     useEffect(() => {
@@ -23,23 +29,19 @@ const Contact = () => {
             confirmButtonText: 'Delete',
         }).then(async (result) => {
             if (result.isConfirmed) {
-                const { data } = await axios.delete(`/api/contact?id=${ID}`);
-                if (data === "Deleted") {
-                    getMessages();
-                    Swal.fire('Deleted!', '', 'success')
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data
-                    });
-                }
+                const { data: {err} } = await axios.delete(`/api/contact?id=${ID}`, createAuthHeaders(token));
+        
+                if (err) return Swal.fire({ icon: 'error', title: err });
+        
+                getMessages();
+        
+                Swal.fire('Deleted!', '', 'success');
             }
         });
     }
 
     return (
-      <section class="contact-settings">
+      <section className="contact-settings">
         <div className="container">
           <h2>Contact Form</h2>
           <hr />
@@ -54,7 +56,7 @@ const Contact = () => {
                   <th>Delete</th>
                 </tr>
                 {
-                    msgs.length ? msgs.map(msg => (
+                    msgs && msgs.length ? msgs.map(msg => (
                         <tr key={msg._id}>
                             <td>{msg.fullName}</td>
                             <td>{msg.email}</td>

@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react"
-import { Route, Redirect } from "react-router-dom"
-import { useLocalStorage } from "react-recipes";
+import { Route } from "react-router-dom"
+import { useSelector } from "react-redux";
 import General from "./content-pages/general.jsx";
 import Certs from "./content-pages/certs.jsx";
 import Clients from "./content-pages/clients.jsx";
@@ -12,51 +11,22 @@ import Stats from "./content-pages/stats.jsx";
 import MyPic from "../assets/images/mypic3.png"
 
 const Content = () => {
-    const [loggedInUser] = useLocalStorage('HASSAN-PORTFOLIO-ADMIN-USER');
-    const [session, setSession] = useState(true);
-  
-    useEffect(() => {
-      if (loggedInUser) {
-        var expiresAt = new Date(loggedInUser.expiresAt).getTime()
-  
-        if (Date.now() > expiresAt) {
-          setSession(false);
-        }
-      } else {
-        setSession(false);
-      }
-    }, [loggedInUser]);
+    const currentUser = useSelector(state => state.currentUser);
 
     return (
         <div className="admin-content col-xl-10 col-lg-9 col-md-8 col-12">
             <nav>
-                <img src={MyPic} alt="user" /> <span>{ loggedInUser && loggedInUser.username }</span>
+                <img src={MyPic} alt="user" /> <span>{ currentUser.username }</span>
             </nav>
             <div className="Sections">
-                <Route path="/" exact component={General}>
-                    { (!loggedInUser || !session) && <Redirect to="/login" /> }
-                </Route>
-                <Route path="/portfolio" exact component={Portfolio}>
-                    { (!loggedInUser || !session) && <Redirect to="/login" /> }
-                </Route>
-                <Route path="/certs" exact component={Certs}>
-                    { (!loggedInUser || !session) && <Redirect to="/login" /> }
-                </Route>
-                <Route path="/clients" exact component={Clients}>
-                    { (!loggedInUser || !session) && <Redirect to="/login" /> }
-                </Route>
-                <Route path="/contact" exact component={Contact}>
-                    { (!loggedInUser || !session) && <Redirect to="/login" /> }
-                </Route>
-                <Route path="/experience" exact component={Experience}>
-                    { (!loggedInUser || !session) && <Redirect to="/login" /> }
-                </Route>
-                <Route path="/skills" exact component={Skills}>
-                    { (!loggedInUser || !session) && <Redirect to="/login" /> }
-                </Route>
-                <Route path="/stats" exact component={Stats}>
-                    { (!loggedInUser || !session) && <Redirect to="/login" /> }
-                </Route>
+                <Route path="/" exact component={General}></Route>
+                <Route path="/portfolio" exact component={Portfolio}></Route>
+                <Route path="/certs" exact component={Certs}></Route>
+                <Route path="/clients" exact component={Clients}></Route>
+                <Route path="/contact" exact component={Contact}></Route>
+                <Route path="/experience" exact component={Experience}></Route>
+                <Route path="/skills" exact component={Skills}></Route>
+                <Route path="/stats" exact component={Stats}></Route>
             </div>
         </div>
     )

@@ -1,17 +1,24 @@
 import { useEffect, useState, useRef } from 'react';
 import Swal from "sweetalert2";
 import axios from "../../axios/axios";
+import { useCookies } from 'react-cookie';
 import { showLoader, hideLoader } from "../loader.jsx";
+import { createAuthHeaders } from "../../utils/headers";
 
 const Certs = () => {
     const [certs, setCerts] = useState([]);
     const [addEditMode, setAddEditMode] = useState(false);
+    const [dragAllowed, setDragAllowed] = useState(false);
     const [editMode, setEditMode] = useState(false);
+    const [{portfolioCurrentAdmin: token}] = useCookies(['portfolioCurrentAdmin']);
     const certInput = useRef();
 
     const getCerts = async () => {
-        const { data } = await axios.get('/api/certs');
-        setCerts(data)
+        const { data: {err, success} } = await axios.get('/api/certs');
+
+        if (err) return;
+
+        setCerts(success);
     }
 
     useEffect(() => {
@@ -36,17 +43,13 @@ const Certs = () => {
             confirmButtonText: 'Delete',
         }).then(async (result) => {
             if (result.isConfirmed) {
-                const { data } = await axios.delete(`/api/certs?id=${ID}`);
-                if (data === "Deleted") {
-                    getCerts();
-                    Swal.fire('Deleted!', '', 'success')
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data
-                    });
-                }
+              const { data: {err} } = await axios.delete(`/api/certs?id=${ID}`, createAuthHeaders(token));
+
+              if (err) return Swal.fire({ icon: 'error', title: err });
+
+              getCerts();
+
+              Swal.fire('Deleted!', '', 'success');
             }
         });
     }
@@ -59,19 +62,21 @@ const Certs = () => {
         const formdata = new FormData();
         formdata.append('cert', cert);
 
-        const {data} = await axios.patch(`/api/certs?id=${ID}`, formdata)
-        if (data._id) {
-            getCerts();
-            Swal.fire('Certificate Edited Successfully!', '', 'success');
-            setAddEditMode(false);
-            setEditMode(false);
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data
-            });
+        const {data: {err}} = await axios.patch(`/api/certs?id=${ID}`, formdata, createAuthHeaders(token));
+        
+        if (err) {
+            hideLoader();
+            return Swal.fire({ icon: 'error', title: err });
         }
+        
+        getCerts();
+
+        Swal.fire('Certificate edited successfully!', '', 'success');
+
+        setAddEditMode(false);
+
+        setEditMode(false);
+        
         hideLoader();
     }
 
@@ -79,31 +84,109 @@ const Certs = () => {
         showLoader();
 
         var cert = certInput.current.files[0];
+
         if (!cert) {
             hideLoader();
-            return Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: "Empty Fileds"
-            });
+            return Swal.fire({ icon: 'error', title: 'You have missed out some empty fields' });
         }
         
         const formdata = new FormData();
         formdata.append('cert', cert);
 
-        const {data} = await axios.post(`/api/certs`, formdata)
-        if (data._id) {
-            getCerts();
-            Swal.fire('Certificate Added Successfully!', '', 'success');
-            setAddEditMode(false);
-            setEditMode(false);
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data
-            });
+        const {data: {err}} = await axios.post(`/api/certs`, formdata, createAuthHeaders(token));
+        
+        if (err) {
+            hideLoader();
+            return Swal.fire({ icon: 'error', title: err });
         }
+        
+        getCerts();
+
+        Swal.fire('New certificate added successfully!', '', 'success');
+
+        setAddEditMode(false);
+
+        setEditMode(false);
+
+        hideLoader();
+    }
+
+    const handleDragStart = (e) => {
+        if (!dragAllowed) return;
+        e.dataTransfer.setData("cert-id", e.target.id);
+    }
+
+    const handleDrop = (e) => {
+        if (!dragAllowed) return;
+        const AllCerts = [...certs];
+        
+        const draggedCertId = e.dataTransfer.getData("cert-id");
+        const droppedOverCertId = e.target.closest("tr").id;
+
+        if (draggedCertId === droppedOverCertId) return;
+
+        const draggedCertIndex = AllCerts.findIndex(cert => cert._id === draggedCertId)
+        const droppedOverCertIndex = AllCerts.findIndex(cert => cert._id === droppedOverCertId)
+        
+        const draggedCert = AllCerts.find(cert => cert._id === draggedCertId)
+        const droppedOverCert = AllCerts.find(cert => cert._id === droppedOverCertId)
+        
+        /*****************************************************************************************************/
+        /******************************************| Drag n Drop Logic |**************************************/
+        /*****************************************************************************************************/
+        // There are certs Between them
+        if (draggedCertIndex !== droppedOverCertIndex + 1 && droppedOverCertIndex !== draggedCertIndex + 1) {
+            if (draggedCertIndex < droppedOverCertIndex) {
+                AllCerts.splice(droppedOverCertIndex, 1, droppedOverCert, draggedCert);
+                AllCerts.splice(draggedCertIndex, 1);
+            } else {
+                AllCerts.splice(droppedOverCertIndex, 1, draggedCert, droppedOverCert);
+                AllCerts.splice(draggedCertIndex + 1, 1);
+            }
+        } 
+        // There are No certs Between them
+        else {
+            if (draggedCertIndex < droppedOverCertIndex) {
+                AllCerts.splice(droppedOverCertIndex, 1, droppedOverCert, draggedCert);
+                AllCerts.splice(draggedCertIndex, 1);
+            } else {
+                AllCerts.splice(droppedOverCertIndex, 1, draggedCert, droppedOverCert);
+                AllCerts.splice(draggedCertIndex + 1, 1);
+            }
+        }
+
+        // Handle The Change Of Priority
+        const updatedCerts = AllCerts.map((cert, idx) => {
+            cert.priority = idx + 1;
+            return cert;
+        });
+
+        // Change Order In UI
+        setCerts(updatedCerts);
+    }
+
+    const cancelOrder = () => {
+        getCerts();
+        setDragAllowed(false);
+    }
+
+    const saveOrder = async () => {
+        showLoader();
+
+        // Save The New Order To DB
+        const dataToUpdate = certs.map(({_id, priority}) => ({_id, priority}));
+        
+        const { data: {err} } = await axios.patch(`/api/certs/updateOrder`, dataToUpdate, createAuthHeaders(token))
+        
+        if (err) {
+            hideLoader();
+            return Swal.fire({ icon: 'error', title: err });
+        }
+
+        Swal.fire('New order saved', '', 'success');
+        
+        setDragAllowed(false);
+
         hideLoader();
     }
     
@@ -114,9 +197,18 @@ const Certs = () => {
         <hr />
         {!addEditMode && (
           <div className="nav">
-            <button onClick={() => setAddEditMode(true)}>
+            <button className="me-2" onClick={() => setAddEditMode(true)}>
               <i className="fal fa-plus-square me-1" /> Add New Certificate
             </button>
+            {
+              dragAllowed ? 
+              <>
+                  <button className="saveOrder" onClick={saveOrder}><i className="fad fa-save me-1" /> Save Order</button>
+                  <button className="cancelOrder" onClick={cancelOrder}><i className="fad fa-ban me-1" /> Cancel</button>
+              </>
+              :
+              <button onClick={() => setDragAllowed(true)}><i className="fad fa-sort-size-up me-1" /> Change Order</button>
+            }
           </div>
         )}
 
@@ -132,7 +224,15 @@ const Certs = () => {
                 </tr>
                 {certs.length ? (
                   certs.map((cert, i) => (
-                    <tr key={cert._id}>
+                    <tr 
+                      key={cert._id} 
+                      draggable={dragAllowed} 
+                      onDragStart={handleDragStart} 
+                      onDrop={handleDrop} 
+                      onDragOver={(e) => e.preventDefault()}
+                      id={cert._id}
+                      className={dragAllowed ? "draggable" : ""}
+                    >
                       <td>{ i + 1 }</td>
                       <td>
                         <img src={cert.cert} alt="certificate" />

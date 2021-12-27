@@ -1,44 +1,67 @@
 import { useEffect, useState } from "react";
-import { useLocalStorage } from "react-recipes";
+import { useDispatch, useSelector } from "react-redux";
+import { useCookies } from 'react-cookie';
 import { BrowserRouter, Route, Redirect } from "react-router-dom"
+import axios from "./axios/axios.js";
+import Login from "./components/login.jsx";
+import AdminPanel from "./components/AdminPanel.jsx";
+import Loading from "./components/loading";
+import RequestsLoader from "./components/loader";
 import './assets/scss/reset.scss';
 import './assets/scss/mixins.scss';
 import './assets/scss/variables.scss';
 import './assets/scss/main.scss';
-import Login from "./components/login.jsx";
-import AdminPanel from "./components/AdminPanel.jsx";
-import Loader from "./components/loader";
 
 const App = () => {
-  const [loggedInUser] = useLocalStorage('HASSAN-PORTFOLIO-ADMIN-USER', null);
-  const [session, setSession] = useState(true);
+  const dispatch = useDispatch();
+  const currentUser = useSelector(state => state.currentUser);
+  const [{portfolioCurrentAdmin: token}] = useCookies(['portfolioCurrentAdmin']);
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
-    if (loggedInUser) {
-      var expiresAt = new Date(loggedInUser.expiresAt).getTime()
-
-      if (Date.now() > expiresAt) {
-        setSession(false);
-      }
-    } else {
-      setSession(false);
+    const validateToken = async (token) => {
+      const { data: {err, success: user} } = await axios.post('/api/auth/validateToken', {token});
+  
+      if (err) return setAuthenticated(false);
+  
+      dispatch({ type: "SET_USER_DATA", user })
+      
+      setAuthenticated(true);
+      setLoading(false);
     }
-  }, [loggedInUser]);
+    
+    // Already Authenticated & currentUser is saved
+    if (currentUser) return setLoading(false);
+
+    // if Authenticated Validate User Token
+    if (token && token !== 'null') validateToken(token);
+    // if not Authenticated
+    else {
+      setAuthenticated(false);
+      setLoading(false);
+    }
+  }, [currentUser, dispatch, token]);
 
   return (
     <div className="App">
-      <div className="admin">
+      {
+        loading ?
+        <Loading />
+        : 
+        <div className="admin">
           <BrowserRouter>
             <Route path="/" component={AdminPanel}>
-                { (!loggedInUser || !session) && <Redirect to="/login" /> }
+                { !authenticated && <Redirect to="/login" /> }
             </Route>
-
+  
             <Route path="/login" exact component={Login}>
-                { (loggedInUser && session) && <Redirect to="/" /> }
+                { authenticated && <Redirect to="/" /> }
             </Route>
           </BrowserRouter>
+          <RequestsLoader />
         </div>
-        <Loader />
+      }
     </div>
   );
 }

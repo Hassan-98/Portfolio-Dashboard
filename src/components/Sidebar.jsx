@@ -1,10 +1,12 @@
 import React from 'react';
 import { NavLink } from "react-router-dom";
-import { useLocalStorage } from "react-recipes";
+import { useCookies } from 'react-cookie';
+import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 
 const Sidebar = ({openedSidebar, mobileView, setOpenedSidebar, setOpenedSection}) => {
-    const [loggedInUser, setLoggedInUser] = useLocalStorage('HASSAN-PORTFOLIO-ADMIN-USER');
+    const [_, setCookie] = useCookies(['portfolioCurrentAdmin']);
+    const currentUser = useSelector(state => state.currentUser);
 
     const hideSidebar = () => {
         setOpenedSidebar(false);
@@ -25,7 +27,7 @@ const Sidebar = ({openedSidebar, mobileView, setOpenedSidebar, setOpenedSection}
                 "You've been logged out.",
                 'success'
               ).then(() => {
-                setLoggedInUser(null);
+                setCookie('portfolioCurrentAdmin', null);
                 window.location.reload();
               })
             }
@@ -40,7 +42,7 @@ const Sidebar = ({openedSidebar, mobileView, setOpenedSidebar, setOpenedSection}
                         mobileView && <i className="fas fa-times-circle close" onClick={hideSidebar} />
                     }
                     <img src="/logoH.png" alt="logo" />
-                    <h5>Welcome Admin!</h5>
+                    <h5>Welcome {currentUser.username}</h5>
                 </section>
                 <section className="menu">
                     <ul>

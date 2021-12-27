@@ -1,19 +1,25 @@
 import { useEffect, useState, useRef } from 'react';
 import Swal from "sweetalert2";
 import axios from "../../axios/axios";
+import { useCookies } from 'react-cookie';
+import { createAuthHeaders } from "../../utils/headers";
 import { showLoader, hideLoader } from "../loader.jsx";
 
 const Stats = () => {
     const [stats, setStats] = useState([]);
     const [addEditMode, setAddEditMode] = useState(false);
     const [editMode, setEditMode] = useState(false);
+    const [{portfolioCurrentAdmin: token}] = useCookies(['portfolioCurrentAdmin']);
     const nameInput = useRef();
     const numberInput = useRef();
     const pictureInput = useRef();
 
     const getStats = async () => {
-        const { data } = await axios.get('/api/stats');
-        setStats(data)
+        const { data: {err, success} } = await axios.get('/api/stats');
+
+        if (err) return;
+    
+        setStats(success);
     }
 
     useEffect(() => {
@@ -44,17 +50,13 @@ const Stats = () => {
             confirmButtonText: 'Delete',
         }).then(async (result) => {
             if (result.isConfirmed) {
-                const { data } = await axios.delete(`/api/stats?id=${ID}`);
-                if (data === "Deleted") {
-                    getStats();
-                    Swal.fire('Deleted!', '', 'success')
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data
-                    });
-                }
+                const { data: {err} } = await axios.delete(`/api/stats?id=${ID}`, createAuthHeaders(token));
+        
+                if (err) return Swal.fire({ icon: 'error', title: err });
+        
+                getStats();
+        
+                Swal.fire('Deleted!', '', 'success');
             }
         });
     }
@@ -71,11 +73,7 @@ const Stats = () => {
 
         if (Stat.name === "" || Stat.number === "") {
             hideLoader();
-            return Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: "Empty Fileds"
-            });
+            return Swal.fire({ icon: 'error', title: 'You have missed out some empty fields' });
         }
         
         const formdata = new FormData();
@@ -84,19 +82,18 @@ const Stats = () => {
 
         if (picture) formdata.append('picture', picture);
 
-        const {data} = await axios.patch(`/api/stats?id=${ID}`, formdata)
-        if (data._id) {
-            getStats();
-            Swal.fire('Statstic Edited Successfully!', '', 'success');
-            setAddEditMode(false);
-            setEditMode(false);
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data
-            });
-        }
+        const {data: {err}} = await axios.patch(`/api/stats?id=${ID}`, formdata, createAuthHeaders(token));
+
+        if (err) return Swal.fire({ icon: 'error', title: err });
+        
+        getStats();
+
+        Swal.fire('Statstic edited successfully!', '', 'success');
+
+        setAddEditMode(false);
+
+        setEditMode(false);
+
         hideLoader();
     }
 
@@ -111,11 +108,7 @@ const Stats = () => {
 
         if (Stat.name === "" || Stat.number === "" || !picture) {
             hideLoader();
-            return Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: "Empty Fileds"
-            });
+            return Swal.fire({ icon: 'error', title: 'You have missed out some empty fields' });
         }
         
         const formdata = new FormData();
@@ -123,19 +116,18 @@ const Stats = () => {
         formdata.set('number', Stat.number);
         formdata.append('picture', picture);
 
-        const {data} = await axios.post(`/api/stats`, formdata)
-        if (data._id) {
-            getStats();
-            Swal.fire('Statstic Added Successfully!', '', 'success');
-            setAddEditMode(false);
-            setEditMode(false);
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data
-            });
-        }
+        const {data: {err}} = await axios.post(`/api/stats`, formdata, createAuthHeaders(token));
+
+        if (err) return Swal.fire({ icon: 'error', title: err });
+
+        getStats();
+
+        Swal.fire('New statstic added successfully!', '', 'success');
+
+        setAddEditMode(false);
+
+        setEditMode(false);
+
         hideLoader();
     }
 
@@ -170,7 +162,7 @@ const Stats = () => {
                                     {
                                         stats.length ? stats.map((stat, i) => 
                                         (
-                                            <tr key={stat._id}>
+                                            <tr key={stat._id} id={stat._id}>
                                                 <td>{ i + 1 }</td>
                                                 <td>{ stat.name }</td>
                                                 <td>{ stat.number }</td>
